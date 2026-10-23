@@ -1,0 +1,26 @@
+{
+  "name": "@btcpoker/server",
+  "version": "0.1.0",
+  "description": "Real-time NLHE game server (HTTP + WebSocket)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "start": "node dist/main.js",
+    "test": "node --import tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@btcpoker/poker-core": "0.1.0",
+    "@btcpoker/rng": "0.1.0",
+    "@btcpoker/payments": "0.1.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2"
+  }
+}

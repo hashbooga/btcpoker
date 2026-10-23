@@ -1,0 +1,27 @@
+{
+  "name": "btcpoker",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Playable NLHE poker with auditable dealing and (stubbed) Bitcoin payments",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b packages/rng packages/poker-core packages/payments packages/server packages/client",
+    "typecheck": "tsc -b packages/rng packages/poker-core packages/payments packages/server packages/client --force && echo typecheck ok",
+    "test": "npm run build && npm run test --workspaces --if-present",
+    "test:rng": "npm run test -w @btcpoker/rng",
+    "start": "npm run build && node packages/server/dist/main.js",
+    "dev": "npm run start",
+    "verify-hand": "node packages/server/dist/verify-cli.js",
+    "clean": "rm -rf packages/*/dist packages/*/*.tsbuildinfo"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2",
+    "@types/node": "^22.10.0"
+  }
+}
