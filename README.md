@@ -30,6 +30,16 @@ Then:
 
 Keyboard shortcuts: **F** fold, **C** check/call, **R** bet/raise (uses the slider amount).
 
+### Camera angles
+
+The table has three switchable camera angles. Use the **Standard / Overhead / POV** toggle above the table, or press **1**, **2**, **3** (**V** cycles). Your choice is saved in `localStorage` and survives reloads.
+
+1. **Standard**: the default view, with the felt tilted slightly away from you and the player plates standing up off the rail.
+2. **Overhead**: a flat, top-down bird's-eye view of the whole table, with a rounder felt and larger community cards so every seat, bet and pot is visible at once.
+3. **POV**: a first-person view from your seat. The felt recedes in front of you with the opponents and board across the table, and your two hole cards are drawn large in the foreground.
+
+The angles are pure CSS 3D transforms (`perspective` and `rotateX` on the felt, with counter-rotated seat "billboards"). There's no 3D engine or extra dependency. Gameplay, the Log, Fairness and Cashier tabs work the same in every view, and opponents' hole cards stay hidden until showdown (the server never sends them).
+
 ## Scripts
 
 | Command | What it does |
@@ -50,7 +60,7 @@ Keyboard shortcuts: **F** fold, **C** check/call, **R** bet/raise (uses the slid
 | `@btcpoker/poker-core` | Full NLHE rules: `Table` (seating, button rotation, busted/sitting-out handling) and `Hand` (blinds incl. heads-up, preflop→river betting, fold/check/call/bet/raise/all-in, min-raise and the TDA "short all-in doesn't reopen" rule, uncalled-bet return, side pots, showdown, split pots, odd chip), plus a 7-card hand evaluator with full tie-breaking |
 | `@btcpoker/payments` | `PaymentAdapter` interface (invoice, status, payout), play-money stubs for mainchain, Lightning and Cashu, and a `Cashier` that converts payments ↔ chips and keeps a ledger |
 | `@btcpoker/server` | HTTP + WebSocket server (`ws`). Hosts several tables and runs the turn timers, bots and hand history. Every deal is commit–reveal. Also serves the client |
-| `@btcpoker/client` | Browser UI (plain TS compiled to ES modules, no bundler): lobby, table, cards, chips, pot, action buttons, bet slider with presets, log, fairness verifier, cashier |
+| `@btcpoker/client` | Browser UI (plain TS compiled to ES modules, no bundler): lobby, table with three camera angles (standard / overhead / POV), cards, chips, pot, action buttons, bet slider with presets, log, fairness verifier, cashier |
 
 ## How a hand is dealt (provably fair)
 

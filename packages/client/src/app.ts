@@ -1,5 +1,6 @@
 import type { ActionType, HandRecord, PaymentMethodInfo, ServerMessage, TableState, TableSummary } from "./types.js";
 import { verifyInBrowser } from "./verify.js";
+import { CAMERA_VIEWS, VIEW_STORAGE_KEY, nextView, parseView, seatRadii, viewForKey, type CameraView } from "./view.js";
 
 // ------------------------------------------------------------------ helpers
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -31,6 +32,7 @@ let currentTableId: string | null = null;
 let lastBoardLen = 0;
 let sliderKey = "";
 let pendingAfterJoin: (() => void) | null = null;
+let view: CameraView = parseView(localStorage.getItem(VIEW_STORAGE_KEY));
 
 ($("name") as HTMLInputElement).value = myName;
 
@@ -157,6 +159,47 @@ $("join-form").addEventListener("submit", (ev) => {
   send({ t: "join", tableId: table.id, buyIn: Number(($("join-amount") as HTMLInputElement).value), method: ($("join-method") as HTMLSelectElement).value, ...(seat !== undefined ? { seat } : {}) });
 });
 
+// ------------------------------------------------------------------ camera angles
+function buildViewSwitch() {
+  const box = $("view-switch");
+  box.innerHTML = "";
+  for (const v of CAMERA_VIEWS) {
+    const b = el("button", "vbtn", `${v.label} <kbd>${v.key}</kbd>`);
+    b.dataset.view = v.id;
+    b.title = `${v.title} (${v.key})`;
+    b.setAttribute("role", "radio");
+    b.onclick = () => setView(v.id);
+    box.append(b);
+  }
+}
+function applyView() {
+  const stage = $("stage");
+  for (const v of CAMERA_VIEWS) stage.classList.toggle(`view-${v.id}`, v.id === view);
+  $("game").dataset.view = view;
+  for (const b of $("view-switch").querySelectorAll<HTMLButtonElement>(".vbtn")) {
+    const on = b.dataset.view === view;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-checked", String(on));
+  }
+}
+function setView(v: CameraView) {
+  if (v === view) return;
+  view = v;
+  localStorage.setItem(VIEW_STORAGE_KEY, v);
+  applyView();
+  if (state) renderTable();
+}
+buildViewSwitch();
+applyView();
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  const tgt = e.target as HTMLElement;
+  if (tgt.tagName === "SELECT" || tgt.tagName === "TEXTAREA" || (tgt.tagName === "INPUT" && (tgt as HTMLInputElement).type !== "range" && (tgt as HTMLInputElement).type !== "checkbox")) return;
+  if ($("game").classList.contains("hidden") || ($("join-dialog") as HTMLDialogElement).open) return;
+  const v = e.key.toLowerCase() === "v" ? nextView(view) : viewForKey(e.key);
+  if (v) { e.preventDefault(); setView(v); }
+});
+
 // ------------------------------------------------------------------ table rendering
 function seatPos(seat: number, n: number, mySeat: number | null, rx: number, ry: number) {
   const k = (seat - (mySeat ?? 0) + n) % n;
@@ -168,6 +211,7 @@ function renderTable() {
   const s = state!;
   const n = s.table.maxSeats;
   const me = s.you.seat;
+  const radii = seatRadii(view);
   $("table-name").textContent = s.table.name;
   $("blinds").textContent = `Blinds ${s.table.smallBlind}/${s.table.bigBlind}`;
   $("handno").textContent = s.table.handNumber ? `Hand #${s.table.handNumber}` : "";
@@ -194,7 +238,7 @@ function renderTable() {
   seats.innerHTML = "";
   for (let i = 0; i < n; i++) {
     const v = s.seats[i];
-    const p = seatPos(i, n, me, 50, 56);
+    const p = seatPos(i, n, me, ...radii.seat);
     const d = el("div", "seat");
     d.style.left = `${p.x}%`; d.style.top = `${p.y}%`;
     if (!v) {
@@ -225,23 +269,53 @@ function renderTable() {
     seats.append(d);
 
     if (v.streetBet > 0) {
-      const bp = seatPos(i, n, me, 30, 30);
+      const bp = seatPos(i, n, me, ...radii.bet);
       const b = el("div", "bet", `<span class="chip"></span>${v.streetBet}`);
       b.style.left = `${bp.x}%`; b.style.top = `${bp.y}%`;
       seats.append(b);
     }
     if (i === s.buttonSeat && s.table.handNumber > 0) {
-      const dp = seatPos(i, n, me, 38, 40);
+      const dp = seatPos(i, n, me, ...radii.dealer);
       const btn = el("div", "dealer", "D");
       btn.style.left = `${dp.x + 4}%`; btn.style.top = `${dp.y}%`;
       seats.append(btn);
     }
   }
 
+  renderPovHand();
   renderActions();
   renderLog();
   renderFairness();
   renderCashier();
+}
+
+/** POV foreground: your own hole cards, large and close, plus your stack. */
+function renderPovHand() {
+  const box = $("pov-hand");
+  const s = state!;
+  if (view !== "pov") { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  box.classList.remove("hidden");
+  box.innerHTML = "";
+  const me = s.you.seat;
+  const v = me !== null ? s.seats[me] : null;
+  if (!v) {
+    box.append(el("div", "pov-note", "You're watching — this is the view from seat 1. Sit down to see your own cards up close."));
+    return;
+  }
+  box.classList.toggle("turn", s.toAct === me);
+  box.classList.toggle("folded", v.folded);
+  box.classList.toggle("winner", !!v.isWinner);
+  const cards = el("div", "pov-cards");
+  if (v.cards) v.cards.forEach((c, k) => { const ce = cardEl(c); ce.classList.add("big", k === 0 ? "l" : "r"); cards.append(ce); });
+  else for (let k = 0; k < v.cardCount; k++) { const ce = cardEl(null); ce.classList.add("big", k === 0 ? "l" : "r"); cards.append(ce); }
+  const tag = v.allIn ? "ALL-IN" : v.lastAction ?? (v.sittingOut ? "sitting out" : "");
+  const info = el("div", "pov-info", `<div class="name">${esc(v.name)}</div><div class="stack">${v.stack}</div><div class="tag">${esc(tag)}</div>${v.handDescription ? `<div class="handdesc">${esc(v.handDescription)}</div>` : ""}`);
+  if (s.toAct === me && s.turnDeadline) {
+    const bar = el("div", "timer");
+    bar.dataset.deadline = String(s.turnDeadline);
+    info.append(bar);
+  }
+  box.append(cards, info);
 }
 
 function renderLog() {

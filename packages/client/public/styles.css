@@ -39,7 +39,55 @@ kbd { font-size: 10px; opacity: .6; border: 1px solid currentColor; border-radiu
 
 .game { display: grid; grid-template-columns: 1fr 340px; height: calc(100% - 53px); }
 .table-area { display: flex; flex-direction: column; padding: 12px 16px; min-width: 0; }
-.table-title { font-weight: 600; margin-bottom: 6px; display: flex; gap: 12px; }
+.table-title { font-weight: 600; margin-bottom: 6px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+/* ---- camera angles: CSS 3D transforms on the felt (no 3D engine) ---- */
+.view-switch { margin-left: auto; display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #0d1117; }
+.view-switch .vbtn { border: 0; border-radius: 0; background: transparent; padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.view-switch .vbtn + .vbtn { border-left: 1px solid var(--line); }
+.view-switch .vbtn.active { background: var(--orange); color: #111; }
+.view-switch .vbtn kbd { opacity: .55; }
+.stage { --tilt: 28deg; --lift: 12deg; --zoom: .95; --persp: 1200px; --origin: 50% 100%;
+  position: relative; flex: 1; display: flex; min-height: 420px; perspective: var(--persp); perspective-origin: 50% 20%; }
+.stage.view-overhead { --tilt: 0deg; --lift: 0deg; --zoom: 1; --origin: 50% 50%; }
+.stage.view-standard .felt { margin: 50px 70px 70px; }
+.stage.view-pov { --tilt: 50deg; --lift: 34deg; --zoom: 1.1; --persp: 900px; --origin: 50% 100%; }
+.stage .felt { transform-style: preserve-3d; transform-origin: var(--origin); transform: rotateX(var(--tilt)) scale(var(--zoom));
+  transition: transform .6s cubic-bezier(.2,.7,.2,1), margin .6s ease, border-radius .6s ease; }
+#seats { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
+#seats > * { pointer-events: auto; }
+/* seats, bets and the dealer button stand up from the felt facing the camera (billboards) */
+.stage .seat, .stage .bet, .stage .dealer { transform-origin: 50% 100%; transform: translate(-50%, -50%) rotateX(calc(-1 * var(--tilt))); transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+.stage .center { transform-origin: 50% 100%; transform: translate(-50%, -50%) rotateX(calc(-1 * var(--lift))); transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+/* overhead: flatter, rounder table, bigger board, compact plates */
+.stage.view-overhead .felt { margin: 30px 110px 40px; border-radius: 46% / 50%; }
+.stage.view-overhead .board .card { width: 58px; height: 82px; } .stage.view-overhead .board .card .r { font-size: 26px; }
+.stage.view-overhead .seat { width: 130px; }
+.stage.view-overhead .seat .plate { padding: 4px 6px; }
+/* POV: you are at the near rail; your seat moves to the foreground hand below */
+.stage.view-pov .felt { margin: 10px 40px 0; }
+.stage.view-pov .seat.me { visibility: hidden; }
+.stage.view-pov .board .card { width: 58px; height: 82px; } .stage.view-pov .board .card .r { font-size: 26px; }
+.stage.view-pov .seat { width: 170px; }
+.stage.view-pov .seat .plate { font-size: 16px; }
+.stage.view-pov .pot { font-size: 20px; }
+.pov-hand { position: relative; z-index: 2; display: flex; align-items: flex-end; justify-content: center; gap: 22px; margin: -70px 0 10px; min-height: 150px; pointer-events: none; }
+.pov-hand > * { pointer-events: auto; }
+.pov-cards { display: flex; perspective: 600px; }
+.card.big { width: 96px; height: 138px; border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,.7); transition: transform .3s ease; }
+.card.big .r { font-size: 40px; } .card.big .s { font-size: 36px; }
+.card.big.l { transform: rotate(-8deg) translateY(6px); margin-right: -22px; }
+.card.big.r { transform: rotate(7deg); }
+.pov-hand:hover .card.big.l { transform: rotate(-10deg) translateY(-6px); } .pov-hand:hover .card.big.r { transform: rotate(9deg) translateY(-10px); }
+.pov-info { background: rgba(13,17,23,.92); border: 2px solid var(--blue); border-radius: 12px; padding: 8px 14px; min-width: 130px; text-align: center; }
+.pov-info .name { font-weight: 600; } .pov-info .stack { color: #ffe8a3; font-weight: 700; font-size: 18px; } .pov-info .tag { font-size: 11px; color: var(--muted); min-height: 15px; }
+.pov-info .timer { height: 3px; background: var(--orange); border-radius: 2px; margin-top: 4px; transition: width .2s linear; }
+.pov-hand.turn .pov-info { border-color: var(--orange); box-shadow: 0 0 16px rgba(247,147,26,.7); }
+.pov-hand.winner .pov-info { border-color: #3fb950; box-shadow: 0 0 18px rgba(63,185,80,.8); }
+.pov-hand.folded .pov-cards { opacity: .45; filter: grayscale(.6); }
+.pov-note { color: var(--muted); background: rgba(13,17,23,.85); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; align-self: center; }
+@media (prefers-reduced-motion: reduce) { .stage .felt, .stage .seat, .stage .bet, .stage .dealer, .stage .center { transition: none; } }
+
 .felt { position: relative; flex: 1; min-height: 420px; margin: 40px 70px 60px; border-radius: 999px;
   background: radial-gradient(ellipse at center, #1a7a4c 0%, var(--felt) 55%, var(--felt2) 100%);
   border: 14px solid #5a3a1e; box-shadow: inset 0 0 40px rgba(0,0,0,.6), 0 10px 30px rgba(0,0,0,.6); }
@@ -113,5 +161,7 @@ dialog label { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; 
 @media (max-width: 900px) {
   .game { grid-template-columns: 1fr; height: auto; }
   .felt { margin: 40px 30px 60px; min-height: 360px; }
+  .stage.view-overhead .felt { margin: 30px 30px 40px; }
+  .card.big { width: 72px; height: 104px; } .card.big .r { font-size: 30px; } .card.big .s { font-size: 26px; }
   .seat { width: 110px; } .card.small { width: 30px; height: 44px; }
 }

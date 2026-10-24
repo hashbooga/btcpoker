@@ -36,15 +36,20 @@
 
   <main id="game" class="game hidden">
     <div class="table-area">
-      <div class="table-title"><span id="table-name"></span> <span id="blinds" class="muted"></span> <span id="handno" class="muted"></span></div>
-      <div id="felt" class="felt">
-        <div class="center">
-          <div id="board" class="board"></div>
-          <div id="pot" class="pot"></div>
-          <div id="banner" class="banner"></div>
-        </div>
-        <div id="seats"></div>
+      <div class="table-title"><span id="table-name"></span> <span id="blinds" class="muted"></span> <span id="handno" class="muted"></span>
+        <div id="view-switch" class="view-switch" role="radiogroup" aria-label="Camera angle"></div>
       </div>
+      <div id="stage" class="stage view-standard">
+        <div id="felt" class="felt">
+          <div class="center">
+            <div id="board" class="board"></div>
+            <div id="pot" class="pot"></div>
+            <div id="banner" class="banner"></div>
+          </div>
+          <div id="seats"></div>
+        </div>
+      </div>
+      <div id="pov-hand" class="pov-hand hidden"></div>
       <div id="actions" class="actions">
         <div class="action-buttons hidden">
           <button id="act-fold" class="act fold">Fold <kbd>F</kbd></button>
